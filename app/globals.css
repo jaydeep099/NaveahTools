@@ -1,0 +1,49 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap");
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f7f9fc;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #bfcff8;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+textarea::placeholder {
+  color: #8c9ab0 !important;
+  opacity: 0.5;
+}
+
+input::placeholder {
+  color: #8c9ab0 !important;
+  opacity: 0.45;
+}
+
+select option {
+  background: white;
+  color: #0f1c36;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 0.4;
+}
