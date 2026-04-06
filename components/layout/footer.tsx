@@ -14,8 +14,8 @@ export default function Footer() {
         justifyContent: "space-between"
       }}
     >
-      <span style={{ fontSize: 11, fontFamily: "'Inter', sans-serif", color: T.textMuted }}>NaveahTools - Oracle Utilities</span>
-      <span style={{ fontSize: 11, fontFamily: "monospace", color: T.textMuted }}>v1.2.0</span>
+      <span style={{ fontSize: 11, fontFamily: "'Inter', sans-serif", color: T.textMuted }}>NaveahTools - Consultant Utilities</span>
+      <span style={{ fontSize: 11, fontFamily: "monospace", color: T.textMuted }}>v1.0.0</span>
     </footer>
   );
 }

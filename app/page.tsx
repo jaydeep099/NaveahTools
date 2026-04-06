@@ -1,5 +1,5 @@
-import NaveahToolsApp from "@/components/naveah-tools-app";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <NaveahToolsApp />;
+  redirect("/json");
 }

@@ -35,6 +35,12 @@ export interface ParsedDelimited {
   rows: string[][];
 }
 
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+export interface JsonObject {
+  [key: string]: JsonValue;
+}
+
 export const ORACLE_BASE_TYPES: OracleBaseType[] = [
   { base: "VARCHAR2", sizeMode: "single", sizeLabel: "Length", defaultSize: "255", placeholder: "1-32767" },
   { base: "NVARCHAR2", sizeMode: "single", sizeLabel: "Length", defaultSize: "255", placeholder: "1-16383" },

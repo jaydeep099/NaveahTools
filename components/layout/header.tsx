@@ -1,27 +1,31 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { T } from "@/lib/tokens";
 
-const navItems = ["JSON", "XML", "CSV to SQL"] as const;
-export type ActivePage = (typeof navItems)[number];
+const navItems = [
+  { label: "JSON Tools", href: "/json" },
+  { label: "XML Tools", href: "/xml" },
+  { label: "CSV to SQL", href: "/csv" }
+] as const;
 
-interface HeaderProps {
-  active: ActivePage;
-  setActive: (item: ActivePage) => void;
-}
-
-export default function Header({ active, setActive }: HeaderProps) {
+export default function Header() {
+  const pathname = usePathname();
+  const normalizedPath = pathname.toLowerCase();
   return (
     <header
       style={{
         display: "flex",
         alignItems: "center",
-        padding: "0 24px",
+        padding: "0 20px",
         background: T.navy,
-        height: 54,
+        height: 60,
         flexShrink: 0,
         boxShadow: "0 2px 8px rgba(15,37,84,0.22)"
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 36 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 20 }}>
         <div
           style={{
             width: 32,
@@ -36,41 +40,59 @@ export default function Header({ active, setActive }: HeaderProps) {
           naveah<span style={{ color: "#93C5FD" }}>tools</span>
         </span>
       </div>
-      <nav style={{ display: "flex", alignItems: "stretch", height: "100%", gap: 2 }}>
+      <nav
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginLeft: 8,
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.14)",
+          borderRadius: 999,
+          padding: "5px"
+        }}
+      >
         {navItems.map((item) => {
-          const isActive = active === item;
+          const isActive = normalizedPath === item.href.toLowerCase();
           return (
-            <button
-              key={item}
-              onClick={() => setActive(item)}
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive ? "page" : undefined}
               style={{
-                background: isActive ? "rgba(255,255,255,0.12)" : "none",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 96,
+                background: isActive ? "#fff" : "transparent",
                 border: "none",
                 cursor: "pointer",
-                padding: "0 16px",
+                padding: "8px 14px",
                 fontFamily: "'Inter', sans-serif",
-                fontSize: 13,
-                fontWeight: isActive ? 600 : 400,
-                color: isActive ? "#fff" : "rgba(255,255,255,0.52)",
-                borderRadius: 6,
-                borderBottom: isActive ? "2px solid #93C5FD" : "2px solid transparent",
-                transition: "all 0.15s"
+                fontSize: 12.5,
+                fontWeight: isActive ? 700 : 500,
+                lineHeight: 1,
+                color: isActive ? T.navy : "rgba(255,255,255,0.78)",
+                borderRadius: 999,
+                textDecoration: "none",
+                boxShadow: isActive ? "0 2px 8px rgba(15,37,84,0.25)" : "none",
+                transition: "all 0.15s ease"
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.color = "rgba(255,255,255,0.85)";
-                  e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+                  e.currentTarget.style.color = "#ffffff";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.18)";
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.color = "rgba(255,255,255,0.52)";
-                  e.currentTarget.style.background = "none";
+                  e.currentTarget.style.color = "rgba(255,255,255,0.78)";
+                  e.currentTarget.style.background = "transparent";
                 }
               }}
             >
-              {item}
-            </button>
+              {item.label}
+            </Link>
           );
         })}
       </nav>
@@ -79,10 +101,10 @@ export default function Header({ active, setActive }: HeaderProps) {
           marginLeft: "auto",
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
           fontSize: 11,
           fontFamily: "'Inter', sans-serif",
-          color: "rgba(255,255,255,0.3)"
+          color: "rgba(255,255,255,0.45)"
         }}
       >
         <span
