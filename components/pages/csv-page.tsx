@@ -1,6 +1,7 @@
 "use client";
 
-import { CSSProperties, useMemo, useState } from "react";
+import { CSSProperties, useMemo, useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import CodeEditor from "@/components/ui/code-editor";
 import Btn from "@/components/ui/btn";
 import Toolbar from "@/components/ui/toolbar";
@@ -23,7 +24,10 @@ export default function CsvPage() {
 
   const handleParse = () => {
     const { headers } = parseDelimited(csvInput, delimiter);
-    if (!headers.length) return;
+    if (!headers.length) {
+      toast.error("No headers found in the input data.");
+      return;
+    }
     setColumns(
       headers.map((h) => ({
         name: h.replace(/[^a-zA-Z0-9_]/g, "_").toUpperCase(),
@@ -36,6 +40,7 @@ export default function CsvPage() {
       }))
     );
     setParsed(true);
+    toast.success("Headers parsed successfully!");
   };
 
   const updateColumn = (i: number, patch: Partial<ColumnConfig>) => {
@@ -62,6 +67,10 @@ export default function CsvPage() {
   };
 
   const generateCreate = () => {
+    if (!parsed) {
+      toast.error("Please parse the headers first by clicking 'Parse Headers'.");
+      return;
+    }
     if (!tableName.trim()) {
       setOutput("-- ERROR: Table name is required.");
       return;
@@ -69,9 +78,14 @@ export default function CsvPage() {
     const tName = tableName.trim().toUpperCase();
     const lines = includedCols.map((c) => `  ${c.name.padEnd(32)} ${buildTypeDef(c).padEnd(28)}${c.nullable ? "" : "NOT NULL"}`);
     setOutput(`CREATE TABLE ${tName}\n(\n${lines.join(",\n")}\n);`);
+    toast.success("CREATE TABLE statement generated!");
   };
 
   const generateInserts = () => {
+    if (!parsed) {
+      toast.error("Please parse the headers first by clicking 'Parse Headers'.");
+      return;
+    }
     if (!tableName.trim()) {
       setOutput("-- ERROR: Table name is required.");
       return;
@@ -84,16 +98,38 @@ export default function CsvPage() {
     const tName = tableName.trim().toUpperCase();
     const colNames = includedCols.map((c) => c.name).join(", ");
     const colIndices = includedCols.map((c) => columns.indexOf(c));
+    
     const numTypes = new Set(["NUMBER", "INTEGER", "FLOAT", "BINARY_FLOAT", "BINARY_DOUBLE"]);
+    const dateTypes = new Set(["DATE"]);
+    const timestampTypes = new Set(["TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITH LOCAL TIME ZONE"]);
+    
+    const formatValue = (val: string, col: ColumnConfig): string => {
+      if (val === "" || val === null) return "NULL";
+      
+      const baseType = col.baseType;
+      
+      if (numTypes.has(baseType)) {
+        return val;
+      } else if (dateTypes.has(baseType)) {
+        return `TO_DATE('${val}','YYYY-MM-DD')`;
+      } else if (timestampTypes.has(baseType)) {
+        return `TO_TIMESTAMP('${val}','YYYY-MM-DD HH24:MI:SS')`;
+      } else {
+        // VARCHAR2, CHAR, and other string types
+        return `'${val.replace(/'/g, "''")}'`;
+      }
+    };
+    
     const inserts = rows.map((row) => {
       const vals = colIndices.map((idx) => {
         const val = row[idx] || "";
         const col = columns[idx];
-        return numTypes.has(col?.baseType ?? "") ? (val === "" ? "NULL" : val) : `'${val.replace(/'/g, "''")}'`;
+        return formatValue(val, col);
       });
       return `INSERT INTO ${tName} (${colNames}) VALUES (${vals.join(", ")});`;
     });
     setOutput(inserts.join("\n"));
+    toast.success("INSERT statements generated!");
   };
 
   const fieldStyle: CSSProperties = {
@@ -184,7 +220,7 @@ export default function CsvPage() {
                 <span />
               </div>
               {columns.map((col, i) => (
-                <div key={`${col.name}-${i}`} style={{ display: "grid", gridTemplateColumns: "28px 1fr 220px 78px 32px", gap: 8, padding: "9px 14px", alignItems: "start", opacity: col.include ? 1 : 0.28, borderBottom: `1px solid ${T.border}`, background: i % 2 === 0 ? T.surface : T.surfaceAlt, transition: "opacity 0.2s" }}>
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "28px 1fr 220px 78px 32px", gap: 8, padding: "9px 14px", alignItems: "start", opacity: col.include ? 1 : 0.28, borderBottom: `1px solid ${T.border}`, background: i % 2 === 0 ? T.surface : T.surfaceAlt, transition: "opacity 0.2s" }}>
                   <span style={{ fontSize: 11, color: T.textMuted, fontFamily: "monospace", textAlign: "center", paddingTop: 7 }}>{i + 1}</span>
                   <input
                     value={col.name}
@@ -236,7 +272,7 @@ export default function CsvPage() {
         </Btn>
         <Btn onClick={generateInserts}>Generate INSERT Statements</Btn>
         <div style={{ flex: 1 }} />
-        <Btn variant="ghost" onClick={() => setOutput("")}>
+        <Btn variant="ghost" onClick={() => { setOutput(""); toast("Output cleared."); }}>
           Clear Output
         </Btn>
         <Btn
@@ -247,6 +283,7 @@ export default function CsvPage() {
             setOutput("");
             setParsed(false);
             setTableName("");
+            toast("All fields cleared.");
           }}
         >
           Reset All

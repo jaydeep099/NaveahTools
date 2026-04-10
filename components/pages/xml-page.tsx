@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 import CodeEditor from "@/components/ui/code-editor";
 import Btn from "@/components/ui/btn";
 import Toolbar from "@/components/ui/toolbar";
@@ -38,6 +39,11 @@ export default function XmlPage() {
             const r = validateXML(input);
             setStatus(r.valid ? "valid" : "invalid");
             setOutput(r.message);
+            if (r.valid) {
+              toast.success("XML is valid!");
+            } else {
+              toast.error("XML is invalid.");
+            }
           }}
         >
           Validate XML
@@ -47,6 +53,11 @@ export default function XmlPage() {
             const r = beautifyXML(input);
             setOutput(r.result);
             setStatus(r.ok ? "valid" : "invalid");
+            if (r.ok) {
+              toast.success("XML beautified successfully!");
+            } else {
+              toast.error("Failed to beautify XML.");
+            }
           }}
         >
           Beautify
@@ -72,6 +83,11 @@ export default function XmlPage() {
             const r = target === "json" ? xmlToJson(input) : xmlToCsvBestEffort(input);
             setOutput(r.result);
             setStatus(r.ok ? "valid" : "invalid");
+            if (r.ok) {
+              toast.success(`Converted to ${target.toUpperCase()} successfully!`);
+            } else {
+              toast.error(`Failed to convert to ${target.toUpperCase()}.`);
+            }
           }}
         >
           Convert
@@ -83,6 +99,7 @@ export default function XmlPage() {
             setInput("");
             setOutput("");
             setStatus(null);
+            toast("Cleared all fields.");
           }}
         >
           Clear All

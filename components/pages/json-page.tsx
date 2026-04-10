@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 import CodeEditor from "@/components/ui/code-editor";
 import Btn from "@/components/ui/btn";
 import Toolbar from "@/components/ui/toolbar";
@@ -36,6 +37,11 @@ export default function JsonPage() {
             const r = validateJSON(input);
             setStatus(r.valid ? "valid" : "invalid");
             setOutput(r.message);
+            if (r.valid) {
+              toast.success("JSON is valid!");
+            } else {
+              toast.error("JSON is invalid.");
+            }
           }}
         >
           Validate JSON
@@ -45,6 +51,11 @@ export default function JsonPage() {
             const r = beautifyJSON(input);
             setOutput(r.result);
             setStatus(r.ok ? "valid" : "invalid");
+            if (r.ok) {
+              toast.success("JSON beautified successfully!");
+            } else {
+              toast.error("Failed to beautify JSON.");
+            }
           }}
         >
           Beautify
@@ -54,6 +65,11 @@ export default function JsonPage() {
             const r = jsonToXml(input);
             setOutput(r.result);
             setStatus(r.ok ? "valid" : "invalid");
+            if (r.ok) {
+              toast.success("Converted to XML successfully!");
+            } else {
+              toast.error("Failed to convert to XML.");
+            }
           }}
         >
           Convert to XML
@@ -65,6 +81,7 @@ export default function JsonPage() {
             setInput("");
             setOutput("");
             setStatus(null);
+            toast("Cleared all fields.");
           }}
         >
           Clear All
