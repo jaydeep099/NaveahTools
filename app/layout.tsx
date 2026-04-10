@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NaveahTools",
+  title: "NevaehTools",
   description: "Oracle utilities for JSON, XML, and CSV-to-SQL."
 };
 

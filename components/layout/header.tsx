@@ -26,7 +26,7 @@ export default function Header() {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 20 }}>
-        <div
+        {/* <div
           style={{
             width: 32,
             height: 32,
@@ -35,9 +35,9 @@ export default function Header() {
             background: "rgba(255,255,255,0.08)",
             flexShrink: 0
           }}
-        />
+        /> */}
         <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
-          naveah<span style={{ color: "#93C5FD" }}>tools</span>
+          Nevaeh<span style={{ color: "#93C5FD" }}>Tools</span>
         </span>
       </div>
       <nav
@@ -96,29 +96,6 @@ export default function Header() {
           );
         })}
       </nav>
-      <div
-        style={{
-          marginLeft: "auto",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          fontSize: 11,
-          fontFamily: "'Inter', sans-serif",
-          color: "rgba(255,255,255,0.45)"
-        }}
-      >
-        <span
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: "#34D399",
-            display: "inline-block",
-            boxShadow: "0 0 5px #34D399"
-          }}
-        />
-        Ready
-      </div>
     </header>
   );
 }
