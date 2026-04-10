@@ -19,6 +19,7 @@ export default function CsvPage() {
   const [columns, setColumns] = useState<ColumnConfig[]>([]);
   const [output, setOutput] = useState("");
   const [parsed, setParsed] = useState(false);
+  const [lastAction, setLastAction] = useState<"create" | "insert" | null>(null);
 
   const includedCols = useMemo(() => columns.filter((c) => c.include), [columns]);
 
@@ -40,6 +41,8 @@ export default function CsvPage() {
       }))
     );
     setParsed(true);
+    setLastAction(null);
+    setOutput("");
     toast.success("Headers parsed successfully!");
   };
 
@@ -66,34 +69,22 @@ export default function CsvPage() {
     ]);
   };
 
-  const generateCreate = () => {
-    if (!parsed) {
-      toast.error("Please parse the headers first by clicking 'Parse Headers'.");
-      return;
-    }
-    if (!tableName.trim()) {
-      setOutput("-- ERROR: Table name is required.");
-      return;
+  const generateCreateOutput = () => {
+    if (!parsed || !tableName.trim()) {
+      return null;
     }
     const tName = tableName.trim().toUpperCase();
     const lines = includedCols.map((c) => `  ${c.name.padEnd(32)} ${buildTypeDef(c).padEnd(28)}${c.nullable ? "" : "NOT NULL"}`);
-    setOutput(`CREATE TABLE ${tName}\n(\n${lines.join(",\n")}\n);`);
-    toast.success("CREATE TABLE statement generated!");
+    return `CREATE TABLE ${tName}\n(\n${lines.join(",\n")}\n);`;
   };
 
-  const generateInserts = () => {
-    if (!parsed) {
-      toast.error("Please parse the headers first by clicking 'Parse Headers'.");
-      return;
-    }
-    if (!tableName.trim()) {
-      setOutput("-- ERROR: Table name is required.");
-      return;
+  const generateInsertsOutput = () => {
+    if (!parsed || !tableName.trim()) {
+      return null;
     }
     const { rows } = parseDelimited(csvInput, delimiter);
     if (!rows.length) {
-      setOutput("-- No data rows found.");
-      return;
+      return "-- No data rows found.";
     }
     const tName = tableName.trim().toUpperCase();
     const colNames = includedCols.map((c) => c.name).join(", ");
@@ -128,7 +119,51 @@ export default function CsvPage() {
       });
       return `INSERT INTO ${tName} (${colNames}) VALUES (${vals.join(", ")});`;
     });
-    setOutput(inserts.join("\n"));
+    return inserts.join("\n");
+  };
+
+  useEffect(() => {
+    if (lastAction === "create") {
+      const result = generateCreateOutput();
+      if (result) {
+        setOutput(result);
+      }
+    } else if (lastAction === "insert") {
+      const result = generateInsertsOutput();
+      if (result) {
+        setOutput(result);
+      }
+    }
+  }, [columns, tableName, includedCols, lastAction, parsed, csvInput, delimiter]);
+
+  const generateCreate = () => {
+    if (!parsed) {
+      toast.error("Please parse the headers first by clicking 'Parse Headers'.");
+      return;
+    }
+    if (!tableName.trim()) {
+      toast.error("Table name is required.");
+      return;
+    }
+    setLastAction("create");
+    toast.success("CREATE TABLE statement generated!");
+  };
+
+  const generateInserts = () => {
+    if (!parsed) {
+      toast.error("Please parse the headers first by clicking 'Parse Headers'.");
+      return;
+    }
+    if (!tableName.trim()) {
+      toast.error("Table name is required.");
+      return;
+    }
+    const { rows } = parseDelimited(csvInput, delimiter);
+    if (!rows.length) {
+      toast.error("No data rows found.");
+      return;
+    }
+    setLastAction("insert");
     toast.success("INSERT statements generated!");
   };
 
