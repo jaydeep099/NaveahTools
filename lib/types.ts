@@ -18,6 +18,8 @@ export interface ColumnConfig {
   typeScaleVal: string;
   include: boolean;
   nullable: boolean;
+  isPrimaryKey?: boolean;
+  useSequenceDefault?: boolean;
 }
 
 export interface ValidationResult {

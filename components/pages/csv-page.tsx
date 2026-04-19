@@ -20,6 +20,9 @@ export default function CsvPage() {
   const [output, setOutput] = useState("");
   const [parsed, setParsed] = useState(false);
   const [lastAction, setLastAction] = useState<"create" | "insert" | null>(null);
+  const [primaryKeyColumnIndex, setPrimaryKeyColumnIndex] = useState<number | null>(null);
+  const [sequenceName, setSequenceName] = useState("");
+  const [sequenceDefaultColumnIndex, setSequenceDefaultColumnIndex] = useState<number | null>(null);
 
   const includedCols = useMemo(() => columns.filter((c) => c.include), [columns]);
 
@@ -37,12 +40,17 @@ export default function CsvPage() {
         typeSizeVal: "255",
         typeScaleVal: "",
         include: true,
-        nullable: true
+        nullable: true,
+        isPrimaryKey: false,
+        useSequenceDefault: false
       }))
     );
     setParsed(true);
     setLastAction(null);
     setOutput("");
+    setPrimaryKeyColumnIndex(null);
+    setSequenceName("");
+    setSequenceDefaultColumnIndex(null);
     toast.success("Headers parsed successfully!");
   };
 
@@ -64,7 +72,9 @@ export default function CsvPage() {
         typeSizeVal: "255",
         typeScaleVal: "",
         include: true,
-        nullable: true
+        nullable: true,
+        isPrimaryKey: false,
+        useSequenceDefault: false
       }
     ]);
   };
@@ -74,8 +84,28 @@ export default function CsvPage() {
       return null;
     }
     const tName = tableName.trim().toUpperCase();
-    const lines = includedCols.map((c) => `  ${c.name.padEnd(32)} ${buildTypeDef(c).padEnd(28)}${c.nullable ? "" : "NOT NULL"}`);
-    return `CREATE TABLE ${tName}\n(\n${lines.join(",\n")}\n);`;
+    const pkCol = primaryKeyColumnIndex !== null ? columns[primaryKeyColumnIndex] : null;
+    
+    const anySequenceDefault = includedCols.some((c) => c.useSequenceDefault);
+    const lines = includedCols.map((c) => {
+      let line = `  ${c.name.padEnd(32)} ${buildTypeDef(c).padEnd(28)}${c.nullable && !c.isPrimaryKey ? "" : "NOT NULL"}`;
+      if (c.isPrimaryKey) {
+        line += " PRIMARY KEY";
+      }
+      if (sequenceName.trim() && c.useSequenceDefault) {
+        line += ` DEFAULT ${sequenceName.trim().toUpperCase()}.NEXTVAL`;
+      }
+      return line;
+    });
+    
+    let result = `CREATE TABLE ${tName}\n(\n${lines.join(",\n")}\n);`;
+    
+    if (sequenceName.trim() && anySequenceDefault) {
+      const seqName = sequenceName.trim().toUpperCase();
+      result = `CREATE SEQUENCE ${seqName} START WITH 1 INCREMENT BY 1;\n\n${result}`;
+    }
+    
+    return result;
   };
 
   const generateInsertsOutput = () => {
@@ -87,8 +117,10 @@ export default function CsvPage() {
       return "-- No data rows found.";
     }
     const tName = tableName.trim().toUpperCase();
-    const colNames = includedCols.map((c) => c.name).join(", ");
-    const colIndices = includedCols.map((c) => columns.indexOf(c));
+    const defaultCol = columns.find((c) => c.useSequenceDefault);
+    const colsForInsert = defaultCol ? includedCols.filter((c) => c.name !== defaultCol.name) : includedCols;
+    const colNames = colsForInsert.map((c) => c.name).join(", ");
+    const colIndices = colsForInsert.map((c) => columns.indexOf(c));
     
     const numTypes = new Set(["NUMBER", "INTEGER", "FLOAT", "BINARY_FLOAT", "BINARY_DOUBLE"]);
     const dateTypes = new Set(["DATE"]);
@@ -134,7 +166,7 @@ export default function CsvPage() {
         setOutput(result);
       }
     }
-  }, [columns, tableName, includedCols, lastAction, parsed, csvInput, delimiter]);
+  }, [columns, tableName, includedCols, lastAction, parsed, csvInput, delimiter, primaryKeyColumnIndex, sequenceName]);
 
   const generateCreate = () => {
     if (!parsed) {
@@ -213,6 +245,115 @@ export default function CsvPage() {
           Parse Headers
         </Btn>
       </div>
+
+      {parsed && (
+        <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 20px", background: T.surface, borderBottom: `1px solid ${T.border}`, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              id="pkCheckbox"
+              checked={primaryKeyColumnIndex !== null}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setPrimaryKeyColumnIndex(0);
+                } else {
+                  setPrimaryKeyColumnIndex(null);
+                }
+              }}
+              style={{ accentColor: T.blue, cursor: "pointer", width: 14, height: 14 }}
+            />
+            <label htmlFor="pkCheckbox" style={{ fontSize: 12, fontWeight: 500, color: T.textSecond, fontFamily: "'Inter', sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}>
+              Primary Key
+            </label>
+            {primaryKeyColumnIndex !== null && (
+              <select
+                value={primaryKeyColumnIndex}
+                onChange={(e) => setPrimaryKeyColumnIndex(parseInt(e.target.value))}
+                style={{ ...fieldStyle, cursor: "pointer" }}
+              >
+                {columns.map((col, idx) => (
+                  <option key={idx} value={idx}>
+                    {col.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label style={{ fontSize: 12, fontWeight: 500, color: T.textSecond, fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap" }}>
+              Sequence Name
+            </label>
+            <input
+              value={sequenceName}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSequenceName(value);
+                if (!value.trim()) {
+                  setSequenceDefaultColumnIndex(null);
+                  columns.forEach((_, idx) => updateColumn(idx, { useSequenceDefault: false }));
+                }
+              }}
+              placeholder="SEQ_ID"
+              style={{ ...fieldStyle, width: 140, color: T.blue, fontWeight: 600, letterSpacing: "0.03em" }}
+              onFocus={(e) => {
+                e.target.style.borderColor = T.borderFocus;
+                e.target.style.boxShadow = `0 0 0 3px ${T.blueLight}`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = T.border;
+                e.target.style.boxShadow = "none";
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              id="seqDefaultCheckbox"
+              checked={sequenceDefaultColumnIndex !== null}
+              disabled={!sequenceName.trim()}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  const defaultIndex = sequenceDefaultColumnIndex !== null ? sequenceDefaultColumnIndex : 0;
+                  setSequenceDefaultColumnIndex(defaultIndex);
+                  columns.forEach((_, idx) => {
+                    updateColumn(idx, { useSequenceDefault: idx === defaultIndex });
+                  });
+                } else {
+                  setSequenceDefaultColumnIndex(null);
+                  columns.forEach((_, idx) => {
+                    updateColumn(idx, { useSequenceDefault: false });
+                  });
+                }
+              }}
+              style={{ accentColor: T.blue, cursor: sequenceName.trim() ? "pointer" : "not-allowed", width: 14, height: 14 }}
+            />
+            <label htmlFor="seqDefaultCheckbox" style={{ fontSize: 12, fontWeight: 500, color: T.textSecond, fontFamily: "'Inter', sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}>
+              Use Sequence as Default
+            </label>
+            {sequenceDefaultColumnIndex !== null && (
+              <select
+                value={sequenceDefaultColumnIndex}
+                onChange={(e) => {
+                  const newIdx = parseInt(e.target.value);
+                  setSequenceDefaultColumnIndex(newIdx);
+                  columns.forEach((_, idx) => {
+                    updateColumn(idx, { useSequenceDefault: idx === newIdx });
+                  });
+                }}
+                style={{ ...fieldStyle, cursor: "pointer" }}
+              >
+                {columns.map((col, idx) => (
+                  <option key={idx} value={idx}>
+                    {col.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <div style={{ flex: "0 0 38%", display: "flex", flexDirection: "column", borderRight: `1px solid ${T.border}`, padding: 16 }}>
@@ -318,6 +459,8 @@ export default function CsvPage() {
             setOutput("");
             setParsed(false);
             setTableName("");
+            setPrimaryKeyColumnIndex(null);
+            setSequenceName("");
             toast("All fields cleared.");
           }}
         >
